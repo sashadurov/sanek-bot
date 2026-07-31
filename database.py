@@ -7,7 +7,7 @@ DB_PATH = "bandit.db"
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-
+    
     c.execute('''
         CREATE TABLE IF NOT EXISTS users (
             user_id INTEGER PRIMARY KEY,
@@ -17,14 +17,20 @@ def init_db():
             xp INTEGER DEFAULT 0,
             job TEXT DEFAULT NULL,
             job_last_used INTEGER DEFAULT 0,
-            businesses TEXT DEFAULT \"{}\",
-            houses TEXT DEFAULT \"[]\",
-            cars TEXT DEFAULT \"[]\",
-            clothes TEXT DEFAULT \"[]\",
+            job_cooldowns TEXT DEFAULT "{}",
+            businesses TEXT DEFAULT "{}",
+            houses TEXT DEFAULT "[]",
+            cars TEXT DEFAULT "[]",
+            clothes TEXT DEFAULT "[]",
             created_at TEXT
         )
     ''')
-
+    
+    try:
+        c.execute('ALTER TABLE users ADD COLUMN job_cooldowns TEXT DEFAULT "{}"')
+    except sqlite3.OperationalError:
+        pass
+    
     conn.commit()
     conn.close()
 
@@ -94,7 +100,7 @@ def update_business_cooldown(user_id, business_key, timestamp):
 def add_item(user_id, item_type, item_key):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    column = item_type + "s"  # houses, cars, clothes
+    column = item_type + "s"
     c.execute(f"SELECT {column} FROM users WHERE user_id = ?", (user_id,))
     row = c.fetchone()
     items = json.loads(row[0]) if row and row[0] else []
